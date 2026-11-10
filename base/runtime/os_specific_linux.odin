@@ -107,15 +107,28 @@ when ODIN_PLATFORM_SUBTARGET == .Android {
 	}
 }
 
-_exit :: proc "contextless" (code: int) -> ! {
-	SYS_exit_group ::
-		231 when ODIN_ARCH == .amd64 else
-		248 when ODIN_ARCH == .arm32 else
-		94  when ODIN_ARCH == .arm64 else
-		252 when ODIN_ARCH == .i386  else
-		94  when ODIN_ARCH == .riscv64 else
-		0
+when !ODIN_NO_CRT {
+	foreign import libc "system:c"
+}
 
-	intrinsics.syscall(uintptr(SYS_exit_group), uintptr(i32(code)))
-	unreachable()
+_exit :: proc "contextless" (code: int) -> ! {
+	// libc `exit` runs the `atexit` handlers, which the sanitizer runtimes use to set the exit code.
+	when !ODIN_NO_CRT {
+		@(default_calling_convention="c")
+		foreign libc {
+			exit :: proc(status: i32) -> ! ---
+		}
+		exit(i32(code))
+	} else {
+		SYS_exit_group ::
+			231 when ODIN_ARCH == .amd64 else
+			248 when ODIN_ARCH == .arm32 else
+			94  when ODIN_ARCH == .arm64 else
+			252 when ODIN_ARCH == .i386  else
+			94  when ODIN_ARCH == .riscv64 else
+			0
+
+		intrinsics.syscall(uintptr(SYS_exit_group), uintptr(i32(code)))
+		unreachable()
+	}
 }
