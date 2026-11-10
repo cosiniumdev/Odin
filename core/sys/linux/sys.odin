@@ -975,7 +975,10 @@ fcntl_setfd :: proc "contextless" (fd: Fd, cmd: FCntl_Command_SETFD, newfd: Fd) 
 
 fcntl_getfl :: proc "contextless" (fd: Fd, cmd: FCntl_Command_GETFL) -> (Open_Flags, Errno) {
 	ret := syscall(SYS_fcntl, fd, cmd)
-	return errno_unwrap(u32(ret), Open_Flags, Open_Flags)
+	if ret < 0 {
+		return {}, Errno(-ret)
+	}
+	return transmute(Open_Flags)u32(ret), .NONE
 }
 
 fcntl_setfl :: proc "contextless" (fd: Fd, cmd:  FCntl_Command_SETFL, flags: Open_Flags) -> (Errno) {
