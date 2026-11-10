@@ -13,7 +13,6 @@ package testing
 
 import "base:intrinsics"
 import "core:c/libc"
-import "core:os"
 import "core:sync"
 import "core:terminal/ansi"
 
@@ -44,7 +43,8 @@ stop_runner_callback :: proc "c" (sig: libc.int) {
 	// If the flag was already set (if this is the second signal sent for example),
 	// consider this a forced (not graceful) exit.
 	if prev > 0 {
-		os.exit(int(sig))
+		// `exit` is not async-signal-safe; `_Exit` skips the `atexit` handlers.
+		libc._Exit(sig)
 	}
 }
 
