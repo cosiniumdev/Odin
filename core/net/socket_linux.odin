@@ -365,15 +365,11 @@ _set_option :: proc(sock: Any_Socket, option: Socket_Option, value: any, loc := 
 		// .Conditional_Accept,
 		// .Dont_Linger:
 			switch x in value {
-			case bool, b8:
-				x2 := x
-				bool_value = b32((^bool)(&x2)^)
-			case b16:
-				bool_value = b32(x)
-			case b32:
-				bool_value = b32(x)
-			case b64:
-				bool_value = b32(x)
+			case bool: bool_value = b32(x)
+			case b8:   bool_value = b32(x)
+			case b16:  bool_value = b32(x)
+			case b32:  bool_value = x
+			case b64:  bool_value = b32(x)
 			case:
 				panic("set_option() value must be a boolean here", loc)
 			}
@@ -407,14 +403,33 @@ _set_option :: proc(sock: Any_Socket, option: Socket_Option, value: any, loc := 
 	case
 		.Receive_Buffer_Size,
 		.Send_Buffer_Size:
-			// TODO: check for out of range values and return .Value_Out_Of_Range?
-			switch i in value {
-			case   i8,   u8: i2 := i; int_value = i32((^u8)(&i2)^)
-			case  i16,  u16: i2 := i; int_value = i32((^u16)(&i2)^)
-			case  i32,  u32: i2 := i; int_value = i32((^u32)(&i2)^)
-			case  i64,  u64: i2 := i; int_value = i32((^u64)(&i2)^)
-			case i128, u128: i2 := i; int_value = i32((^u128)(&i2)^)
-			case  int, uint: i2 := i; int_value = i32((^uint)(&i2)^)
+			switch real in value {
+			case   i8: int_value = i32(real)
+			case   u8: int_value = i32(real)
+			case  i16: int_value = i32(real)
+			case  u16: int_value = i32(real)
+			case  i32: int_value = real
+			case  u32:
+				if real > u32(max(i32)) { return .Invalid_Value }
+				int_value = i32(real)
+			case  i64:
+				if real > i64(max(i32)) || real < i64(min(i32)) { return .Invalid_Value }
+				int_value = i32(real)
+			case  u64:
+				if real > u64(max(i32)) { return .Invalid_Value }
+				int_value = i32(real)
+			case i128:
+				if real > i128(max(i32)) || real < i128(min(i32)) { return .Invalid_Value }
+				int_value = i32(real)
+			case u128:
+				if real > u128(max(i32)) { return .Invalid_Value }
+				int_value = i32(real)
+			case  int:
+				if real > int(max(i32)) || real < int(min(i32)) { return .Invalid_Value }
+				int_value = i32(real)
+			case uint:
+				if real > uint(max(i32)) { return .Invalid_Value }
+				int_value = i32(real)
 			case:
 				panic("set_option() value must be an integer here", loc)
 			}
