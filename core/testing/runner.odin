@@ -740,6 +740,7 @@ runner :: proc(internal_tests: []Internal_Test) -> bool {
 				data.t.seed = shared_random_seed
 				data.t.error_count = 0
 				data.t._fail_now_called = false
+				data.t._failure_count = 0
 
 				thread.pool_add_task(&pool, task.allocator, run_test_task, data, run_index)
 			}

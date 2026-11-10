@@ -63,10 +63,20 @@ T :: struct {
 	_log_allocator: runtime.Allocator,
 
 	_fail_now_called: bool,
+
+	// Failures counted by `fail` and the `expect` procedures, so that a test fails even when
+	// its `.Error` messages never reach the test logger (log level filter, replaced `context.logger`).
+	_failure_count: int,
+}
+
+@(private)
+_mark_failed :: proc "contextless" (t: ^T) {
+	intrinsics.atomic_add(&t._failure_count, 1)
 }
 
 
 fail :: proc(t: ^T, loc := #caller_location) {
+	_mark_failed(t)
 	log.error("FAIL", location=loc)
 }
 
@@ -78,6 +88,7 @@ fail :: proc(t: ^T, loc := #caller_location) {
 // as the test runner will know to expect the signal this procedure will raise.
 fail_now :: proc(t: ^T, msg := "", loc := #caller_location) -> ! {
 	t._fail_now_called = true
+	_mark_failed(t)
 	if msg != "" {
 		log.error("FAIL:", msg, location=loc)
 	} else {
@@ -87,7 +98,7 @@ fail_now :: proc(t: ^T, msg := "", loc := #caller_location) -> ! {
 }
 
 failed :: proc(t: ^T) -> bool {
-	return t.error_count != 0
+	return t.error_count != 0 || intrinsics.atomic_load(&t._failure_count) != 0
 }
 
 // cleanup registers a procedure and user_data, which will be called when the test, and all its subtests, complete.
@@ -109,6 +120,7 @@ cleanup :: proc(t: ^T, procedure: proc(rawptr), user_data: rawptr) {
 
 expect :: proc(t: ^T, ok: bool, msg := "", expr := #caller_expression(ok), loc := #caller_location) -> bool {
 	if !ok {
+		_mark_failed(t)
 		if msg == "" {
 			log.errorf("expected %v to be true", expr, location=loc)
 		} else {
@@ -120,6 +132,7 @@ expect :: proc(t: ^T, ok: bool, msg := "", expr := #caller_expression(ok), loc :
 
 expectf :: proc(t: ^T, ok: bool, format: string, args: ..any, loc := #caller_location) -> bool {
 	if !ok {
+		_mark_failed(t)
 		log.errorf(format, ..args, location=loc)
 	}
 	return ok
@@ -128,6 +141,7 @@ expectf :: proc(t: ^T, ok: bool, format: string, args: ..any, loc := #caller_loc
 expect_value :: proc(t: ^T, value, expected: $T, loc := #caller_location, value_expr := #caller_expression(value)) -> bool where intrinsics.type_is_comparable(T) {
 	ok := value == expected || reflect.is_nil(value) && reflect.is_nil(expected)
 	if !ok {
+		_mark_failed(t)
 		log.errorf("expected %v to be %v, got %v", value_expr, expected, value, location=loc)
 	}
 	return ok
