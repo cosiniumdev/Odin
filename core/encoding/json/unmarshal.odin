@@ -690,7 +690,7 @@ unmarshal_object :: proc(p: ^Parser, v: any, end_token: Token_Kind, flags: Unmar
 						json_names[field_idx], _ = #force_inline json_name_from_tag_value(reflect.struct_tag_get(fields[field_idx].tag, "json"))
 						json_resolved += 1
 					}
-					if key == json_names[field_idx] {
+					if key == json_names[field_idx] && key != "-" {
 						use_field_idx = field_idx
 						break
 					}
@@ -739,7 +739,7 @@ unmarshal_object :: proc(p: ^Parser, v: any, end_token: Token_Kind, flags: Unmar
 					if key == "" {
 						found = tagged && tag_value == ""
 					} else {
-						found = (json_name == "" && field.name == key) || json_name == key
+						found = (json_name == "" && field.name == key) || (json_name == key && json_name != "-")
 					}
 					if found {
 						offset = field.offset
