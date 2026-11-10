@@ -3086,7 +3086,7 @@ utimensat :: proc "contextless" (dirfd: Fd, name: cstring, utimes: [^]Time_Spec,
 	Available since Linux 2.6.
 */
 epoll_pwait :: proc(epfd: Fd, events: [^]EPoll_Event, count: i32, timeout: i32, sigmask: ^Sig_Set) -> (i32, Errno) {
-	ret := syscall(SYS_epoll_pwait, epfd, events, count, timeout, sigmask)
+	ret := syscall(SYS_epoll_pwait, epfd, events, count, timeout, sigmask, size_of(Sig_Set) if sigmask != nil else 0)
 	return errno_unwrap(ret, i32)
 }
 
