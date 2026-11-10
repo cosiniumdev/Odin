@@ -420,7 +420,7 @@ when ODIN_OS == .Darwin {
 
 	@(private)
 	_WIFSIGNALED :: #force_inline proc "contextless" (x: c.int) -> bool {
-		return (x & 0xffff) - 1 < 0xff
+		return u32(x & 0xffff) - 1 < 0xff
 	}
 
 	@(private)
