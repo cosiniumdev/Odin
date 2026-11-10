@@ -163,7 +163,7 @@ create :: proc(name: string) -> (^File, Error) {
 	`core:sys/android/native_app_glue` makes them available before `main`.
 */
 @(require_results)
-open :: proc(name: string, flags := File_Flags{.Read}, perm := Permissions_Default) -> (^File, Error) {
+open :: proc(name: string, flags := File_Flags{.Read}, perm := Permissions_Default_File) -> (^File, Error) {
 	return _open(name, flags, perm)
 }
 
