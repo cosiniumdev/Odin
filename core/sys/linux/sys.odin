@@ -1536,7 +1536,7 @@ ptrace_setregset :: proc "contextless" (rq: PTrace_Setregset_Type, pid: Pid, not
 }
 
 ptrace_getsiginfo :: proc "contextless" (rq: PTrace_Getsiginfo_Type, pid: Pid, si: ^Sig_Info) -> (Errno) {
-	ret := syscall(SYS_ptrace, rq, pid, si, rawptr(nil))
+	ret := syscall(SYS_ptrace, rq, pid, rawptr(nil), si)
 	return Errno(-ret)
 }
 
